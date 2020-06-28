@@ -3,6 +3,10 @@ from anytree import Node, RenderTree
 import networkx as nx
 import matplotlib.pyplot as plt
 
+'''
+@Productie - defineste o Productie a gramaticii in F.N Chomsky (ex. A->b
+'''
+
 
 class Productie:
     nume = ""
@@ -18,13 +22,22 @@ class Productie:
     def getRight(self):
         return self.drept
 
+    '''
+    Cauta dupa o anumita Productie cu o anumita litera
+    '''
+
     def checkProductionWithLetterExists(self, caracter):
         for val in self.drept:
             if caracter == val[0]:
                 return True
         return False
 
-    def checkNonTerminal(self, nod):
+    '''
+    Verifica daca nodul este neterminal
+    @return True / False
+    '''
+
+    def verificaNeterminal(self, nod):
         for val in self.drept:
             if val == nod:
                 return True
@@ -57,7 +70,6 @@ class AlgoCYK:
 
     def buildTree(self):
         self.addNodeAndItsDerivatives(self.nodeRoot)
-        print('Tree order: ', self.treeOrder)
 
     def printDerivatives(self):
         print('S', end='')
@@ -78,7 +90,7 @@ class AlgoCYK:
 
     def addNodeAndItsDerivatives(self, currentNode):
         nodeName = currentNode.name
-        #print(nodeName)
+
         if self.isBuiltFromTerminals(nodeName):
             if nodeName == self.cuvant:
                 self.treeOrder.append(currentNode)
@@ -92,11 +104,9 @@ class AlgoCYK:
                 if self.verificaNodSursa(currentLetter):
                     productii = self.getProductionChildrenFromTerminal(currentLetter)
                     for p in productii:
-                        #newNodeNameList = list(nodeName)
-                        #newNodeNameList[i] = p
-                        #newNodeName = ''.join(newNodeNameList)
-                        #i += len(p) - 1
-                        newNodeName = nodeName[:i] + p + nodeName[(i+1):]
+                        newNodeNameList = list(nodeName)
+                        newNodeNameList[i] = p
+                        newNodeName = ''.join(newNodeNameList)
                         #print('Nodename: ', newNodeName)
                         newNode = Node(newNodeName, parent=currentNode)
                         self.nxGraph.add_edge(currentNode.name, newNodeName)
@@ -110,6 +120,11 @@ class AlgoCYK:
     def getCuvant(self):
         return self.cuvant
 
+    '''
+    Vom căuta în gramatică pentru fiecare literă mică de ce
+    neterminale poate fi generată.
+    '''
+
     def Pasul1(self):
         self.tabel[1] = {}
         for i in range(1, len(self.cuvant) + 1):
@@ -118,11 +133,27 @@ class AlgoCYK:
                 if Productie.checkProductionWithLetterExists(self.cuvant[i - 1]):
                     self.tabel[1][i].append(Productie.getName())
 
+    '''
+    Reuniunea a doua multimi, exemplu {A} U {B,C}
+
+    @m1 - multimea 1
+    @m2 - multimea 2
+    @return reuniune
+    '''
+
     def reuniune(self, m1, m2):
         for val in m2:
             if val not in m1:
                 m1.append(val)
         return m1
+
+    '''
+    Produsul a doua multimi, exempli {A} X {B,C}
+
+    @m1 - multimea 1
+    @m2 - multimea 2
+    @return produs
+    '''
 
     def produs(self, m1, m2):
         rezultat = []
@@ -136,7 +167,7 @@ class AlgoCYK:
     def getProductionsWithLetters(self, drept):
         productii = []
         for Productie in self.productii:
-            if Productie.checkNonTerminal(drept):
+            if Productie.verificaNeterminal(drept):
                 productii.append(Productie.getName())
         return productii
 
@@ -147,21 +178,41 @@ class AlgoCYK:
             if Productie.getName() == terminalName:
                 return Productie.getRight()
 
+    '''
+    Valoare pe care o calculăm este Vi j pentru cuvântul care începe la poziţia i şi are
+    lungimea j.
+    Prima parte conţine primele k litere din cuvânt. Deci va
+    începe la poziţia i (la fel ca întreg cuvântul) şi va avea lungime k, deci Vi k.
+    A doua parte conţine restul de litere, adică j–k, şi începe cu
+    k poziţii mai în dreapta faţă de cuvântul total, adică la i+k, deci avem Vi+k, j-k.
+
+    @i -Incepe la pozitia i
+    @j - Restul de litere, j-k
+    @return - Vij
+    '''
+
     def calcVij(self, i, j):
         rezultat = {}
         rezultat['final'] = []
         for k in range(1, j):
-            #print('----------- START FIRST FOR ------------------')
+            # print('----------- START FIRST FOR ------------------')
             tmp = self.produs(self.tabel[k][i], self.tabel[j - k][i + k])
             rezultat[k] = []
             for val in tmp:
                 elem_nou = self.getProductionsWithLetters(val)
                 rezultat[k] = self.reuniune(rezultat[k], elem_nou)
-                ##print(val, rezultat)
-                print()
+                # print(val, rezultat)
+                # print()
             rezultat['final'] = self.reuniune(rezultat['final'], rezultat[k])
 
         return rezultat['final']
+
+    '''
+    Răspunsul final pe care îl căutăm este V1, |w| adică mulţimea de neterminale din care
+    putem genera cuvântul dat începând de pe prima poziţie şi având lungimea egală cu
+    întreg cuvântul. Dacă în această mulţime se va găsi şi simbolul de start S, înseamnă că
+    cuvântul este generat de gramatică. Dacă nu, atunci nu este generat.
+    '''
 
     def execute(self):
         self.Pasul1()
@@ -180,6 +231,10 @@ class AlgoCYK:
             print("%s%s" % (pre, node.name))
         print(self.treeOrder)
 
+    '''
+    printMatrix tabelul Vij
+    '''
+
     def printMatrix(self):
         print('V(i,j)')
         for i in range(1, len(self.cuvant) + 1):
@@ -195,19 +250,19 @@ class AlgoCYK:
                     print(val, end=', ')
                 print('}', end=' | ')
             print()
-        print('PRINTED MATRIX')
+        print('END')
 
     def printGraph(self):
         print()
         for precedentNode, _, currentNode in RenderTree(self.tree):
-            print(precedentNode + currentNode.name)
+            print("%s%s" % (precedentNode, currentNode.name))
 
     def printGraphNetworkX(self):
-        edges = [(e1, e2) for (e1, e2, w) in self.nxGraph.edges(data=True)]
+        edges = [(u, v) for (u, v, d) in self.nxGraph.edges(data=True)]
         nodesPosition = nx.spring_layout(self.nxGraph)
         nx.draw_networkx_nodes(self.nxGraph, nodesPosition, node_size=500)
 
-        nx.draw_networkx_edges(self.nxGraph, nodesPosition, edgelist=edges, width=1)
+        nx.draw_networkx_edges(self.nxGraph, nodesPosition, edgelist=edges, width=2)
         nx.draw_networkx_labels(self.nxGraph, nodesPosition, font_size=8)
         plt.axis('off')
         plt.show()
@@ -220,8 +275,8 @@ if __name__ == "__main__":
     print('Cuvantul:' + str(cyk.getCuvant()) + ' ' + ('' if cyk.execute() else ' NU ') + 'este acceptat')
     cyk.printMatrix()
     # S -> AB -> aB -> aAA -> abA -> abBA -> abbA -> abba
-    cyk.buildTree()
     print("\nSTARTING TO PRINT DERIVATIVES")
+    cyk.buildTree()
     cyk.printDerivatives()
     print("\nSTARTING TO PRINT GRAPH")
     #cyk.printGraph()

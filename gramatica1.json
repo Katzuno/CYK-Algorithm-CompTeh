@@ -1,0 +1,30 @@
+{
+"cuvant": "abba",
+"productii":
+  [
+    {
+    "nume": "S",
+    "drept": ["AB", "BA"]
+    },
+    {
+    "nume": "A",
+    "drept": ["CD", "a"]
+    },
+    {
+    "nume" : "B",
+    "drept": ["CE", "b"]
+    },
+    {
+    "nume" : "C",
+    "drept": ["a", "b"]
+    },
+    {
+    "nume" : "D",
+    "drept": ["AC"]
+    },
+    {
+    "nume" : "E",
+    "drept": ["BC"]
+    }
+  ]
+}
